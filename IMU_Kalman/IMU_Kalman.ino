@@ -17,16 +17,8 @@ MPU9250 IMU(Wire,0x68);
 
 void setup() { 
   Serial.begin(9600);
-  //ss.begin(GPSBaud);
   IMU.begin();
   ACC_GYRO_CAL( ACC_BIAS, GYRO_BIAS );
-  /*Serial.print(ACC_BIAS[0][0]);
-  Serial.print("\t");
-  Serial.print(ACC_BIAS[1][0]);
-  Serial.print("\t");
-  Serial.print(ACC_BIAS[2][0]);
-  Serial.print("\n");
-  delay(10000);*/
   OLD_TIME_IMU = millis();
   
 }
@@ -35,15 +27,8 @@ void loop() {
 
   //IMU.readSensor();
   Kalman0( PHI_FUNC,THETA_FUNC, PSI_FUNC, ACC_BIAS );
-  /*Serial.print(PHI_FUNC[0][0]*180./3.415);
-  Serial.print("\t");
-  Serial.print(THETA_FUNC[0][0]*180./3.415);
-  Serial.print("\t");
-  Serial.print(PSI_FUNC[0][0]*180./3.415);
-  Serial.print("\n");
-  delay(100);*/
   Kalman1( PHI_FUNC,THETA_FUNC, PSI_FUNC, P, OLD_TIME_IMU, X_BEST_ESTIMATE, GYRO_BIAS, FLAG);
-  // Kalman2(P, X_BEST_ESTIMATE, S_T, Y_T);
+  Kalman2(P, X_BEST_ESTIMATE, S_T, Y_T);
 
   Serial.print(X_BEST_ESTIMATE[0][0]*180/3.415);
   Serial.print("\t");
@@ -84,42 +69,17 @@ float Kalman0( float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1
   float ACC[3][1], GYRO[3][1], MAGNETOMETER[1][3], MAGX,MAGY,MAGZ,MAG[1][3];
   //float BIAS_ACCX = -0.126385094512281, BIAS_ACCY = -0.049005287225298, BIAS_ACCZ = 0.212105255785606;
   
+  // Data Collection
   IMU.readSensor();
   ACC[0][0] = -IMU.getAccelX_mss() - ACC_BIAS[0][0] ;
   ACC[1][0] = -IMU.getAccelY_mss() - ACC_BIAS[1][0];
   ACC[2][0] = -IMU.getAccelZ_mss() - ACC_BIAS[2][0];
-  /*Serial.print(ACC[0][0]);
-  Serial.print("\t");
-  Serial.print(ACC[0][1]);
-  Serial.print("\t");
-  Serial.print(ACC[0][2]);
-  Serial.print("\n");
-  delay(100);
-  /*GYRO[0][0] = IMU.getGyroX_rads() - BIAS_GYROX;
-  GYRO[1][0] = IMU.getGyroY_rads() - BIAS_GYROY;
-  GYRO[2][0]= IMU.getGyroZ_rads() - BIAS_GYROZ;*/
+  
   MAGNETOMETER[0][0] = IMU.getMagX_uT();//-1.75; // -2;
   MAGNETOMETER[0][1] = IMU.getMagY_uT();//-23.5; //-20;
   MAGNETOMETER[0][2] = IMU.getMagZ_uT();//+21.67; //+20;
-  /*Serial.print(MAGNETOMETER[0][0]);
-  Serial.print("\t");
-  Serial.print(MAGNETOMETER[0][1]);
-  Serial.print("\t");
-  Serial.print(MAGNETOMETER[0][2]);
-  Serial.print("\n");
-  delay(100);*/
-  /*ACC[0][0] = -0.185015;
-  ACC[1][0] = 0.201780;
-  ACC[2][0] = 9.710008;
 
-  GYRO[0][0] = -0.0129992;
-  GYRO[1][0] = -0.0018570;
-  GYRO[2][0] = 0.00252025;
-
-  MAGNETOMETER[0][0] = 30.335156;
-  MAGNETOMETER[0][1] = 88.059375;
-  MAGNETOMETER[0][2] = -40.239843;*/
-
+  // Magnetometer data calibration
   MAGNETOMETER[0][0] = MAGNETOMETER[0][0] - 7.502051994 ;//- 14.74572987;
   MAGNETOMETER[0][1] = MAGNETOMETER[0][1] - 60.93806745 ;//- 53.84865720;
   MAGNETOMETER[0][2] = MAGNETOMETER[0][2] - (-57.36255207);//- (-56.76457803);
@@ -151,9 +111,7 @@ float Kalman1(float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1]
   GYRO[0][0] = -IMU.getGyroX_rads() - GYRO_BIAS[0][0];
   GYRO[1][0] = -IMU.getGyroY_rads() - GYRO_BIAS[1][0];
   GYRO[2][0] = -IMU.getGyroZ_rads() - GYRO_BIAS[2][0];
-  /*GYRO[0][0] = -0.0129992;
-  GYRO[1][0] = -0.0018570;
-  GYRO[2][0] = 0.00252025;*/
+  
   unsigned long NEW_TIME_IMU, dt;
 
   NEW_TIME_IMU = millis();
