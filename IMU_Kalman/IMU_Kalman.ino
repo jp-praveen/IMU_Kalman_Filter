@@ -1,3 +1,11 @@
+// Author: Praveen Jawaharlal Ayyanathan
+// This project implements a Kalman Filter for sensor fusion on an MPU9250 IMU to estimate roll, pitch, and yaw angles. 
+// It combines data from the accelerometer, gyroscope, and magnetometer to provide orientation estimates in real-time.
+// Kalman Filter: Implements a 6-state (roll, roll rate, pitch, pitch rate, yaw, yaw rate) Kalman filter for orientation estimation.
+// In the code, the state vector is represented by X_BEST_ESTIMATE.
+// Bias Calibration: Calibrates the accelerometer and gyroscope biases during setup.
+
+
 #include <math.h>
 #include "MPU9250.h"
 
@@ -25,7 +33,7 @@ void setup() {
 
 void loop() {
 
-  //IMU.readSensor();
+  // Sensor Calibration and Kalman Filter functions
   Kalman0( PHI_FUNC,THETA_FUNC, PSI_FUNC, ACC_BIAS );
   Kalman1( PHI_FUNC,THETA_FUNC, PSI_FUNC, P, OLD_TIME_IMU, X_BEST_ESTIMATE, GYRO_BIAS, FLAG);
   Kalman2(P, X_BEST_ESTIMATE, S_T, Y_T);
@@ -40,11 +48,13 @@ void loop() {
       
 }
 
+// Accelerometer and Gyroscope Calibration
 float ACC_GYRO_CAL( float ACC_BIAS[3][1], float GYRO_BIAS[3][1] ){
   Serial.print("Starting Accelerometer and Gyroscope Calibration.....");
   Serial.print("\n");
 
   for(int j=0;j<1000;j++){
+    // Read accelerometer and Gyroscrope data
     IMU.readSensor();
     ACC_BIAS[0][0] = ACC_BIAS[0][0] -IMU.getAccelX_mss();
     ACC_BIAS[1][0] = ACC_BIAS[1][0] -IMU.getAccelY_mss();
@@ -65,9 +75,7 @@ float ACC_GYRO_CAL( float ACC_BIAS[3][1], float GYRO_BIAS[3][1] ){
 
 float Kalman0( float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1], float ACC_BIAS[3][1] ){
   
-  //float MY, MX;
   float ACC[3][1], GYRO[3][1], MAGNETOMETER[1][3], MAGX,MAGY,MAGZ,MAG[1][3];
-  //float BIAS_ACCX = -0.126385094512281, BIAS_ACCY = -0.049005287225298, BIAS_ACCZ = 0.212105255785606;
   
   // Data Collection
   IMU.readSensor();
@@ -99,6 +107,7 @@ float Kalman0( float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1
   PSI_FUNC[0][0] = atan2(-MAG[0][1]*cos(PHI_FUNC[0][0]) + MAG[0][2]*sin(PHI_FUNC[0][0]), MAG[0][0]*cos(THETA_FUNC[0][0]) + MAG[0][1]*sin(THETA_FUNC[0][0])*sin(PHI_FUNC[0][0]) + MAG[0][2]*sin(THETA_FUNC[0][0])*cos(PHI_FUNC[0][0]));
 }
 
+// Kalman Filter
 float Kalman1(float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1],  float P[6][6], unsigned long  OLD_TIME_IMU, float X_BEST_ESTIMATE[6][1], float GYRO_BIAS[3][1], int FLAG ){
 
   float EULER_DOT[3][1],P1[6][6], C1[3][6], C2[3][3], GYRO[3][1],X_PREV_BEST_ESTIMATE[6][1];
@@ -167,6 +176,7 @@ float Kalman1(float PHI_FUNC[1][1], float THETA_FUNC[1][1], float PSI_FUNC[1][1]
   GYRO_BIAS[2][0] = X_BEST_ESTIMATE[5][0];
 }
   
+// Kalman Filter
 float Kalman2( float P[6][6], float X_BEST_ESTIMATE[6][1], float S_T[3][3], float Y_T[3][1] ){
   float S_T_INV[3][3], S_T_DET[1][1], S_T_ADJ[3][3];
   float K_GAIN[6][3], KT_YT[6][1], K1[6][3], P3[6][6], P4[6][6] ;
@@ -183,7 +193,7 @@ float Kalman2( float P[6][6], float X_BEST_ESTIMATE[6][1], float S_T[3][3], floa
   multiply_PwithCTrans(P, C_TRANS, K1);
   multiply_K1withSTinv(K1, S_T_INV, K_GAIN);
 
-
+\\ Mathematical Functions - Matrix multiplication, adjoint calculation
   multiply_KTwithYT(K_GAIN, Y_T, KT_YT);
   for(int i = 0; i < 6; i++) {
     X_BEST_ESTIMATE[i][0] += KT_YT[i][0];
